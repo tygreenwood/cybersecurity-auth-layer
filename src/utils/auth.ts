@@ -1,18 +1,20 @@
+'use server'
+
+import {secretKey} from "@/utils/key";
+
 const jwt = require("jsonwebtoken");
 
-export const secretKey = "SuperSecret";
-
-export function verifyToken(information: Object, token) {
-    try {
-        const data = jwt.verify(token, secretKey);
-        Object.keys(information).forEach((key) => {
-            if (!information[key] || !data[key] || information[key] != data[key]) {
-                throw new Error();
-            }
-        });
-        return true;
-    } catch(e) {
-        console.error(e);
-        return false;
+export async function verifyToken<T extends Object>(information: T, token, serverFunction: (arg: T) => any, { strict } = {strict: false}) {
+    const data = jwt.verify(token, secretKey);
+    let status = true;
+    Object.keys(information).forEach((key) => {
+        if ((!data[key] && strict) || (information[key] && information[key] != data[key])) {
+            status = false;
+        }
+    });
+    if (status) {
+        return serverFunction(information);
+    } else {
+        console.error("Invalid information: ", information);
     }
 }
